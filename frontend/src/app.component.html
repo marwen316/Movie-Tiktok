@@ -10,6 +10,12 @@
 <a *ngIf="tiktok?.configured && !tiktok?.connected" class="primary download" [href]="tiktok?.connectUrl">Connecter mon compte TikTok</a>
 <button type="button" class="secondary history-refresh" (click)="refreshTikTok()">↻ Vérifier la connexion</button>
 <p class="help">Pour les tests OAuth, la connexion passe par le tunnel HTTPS Cloudflare. Ne partage pas les clés ni les jetons.</p>
+<div *ngIf="tiktok?.connected" class="tiktok-controls">
+<label for="tiktokAdminKey">Clé administrateur de publication (TIKTOK_ADMIN_KEY)</label>
+<input id="tiktokAdminKey" type="password" autocomplete="off" name="tiktokAdminKey" [(ngModel)]="tiktokAdminKey" placeholder="Clé locale, non enregistrée dans le navigateur">
+<button type="button" class="secondary" [disabled]="!tiktokAdminKey" (click)="checkCreator()">Vérifier les options du compte TikTok</button>
+<p *ngIf="tiktokCreator" class="help">Compte : {{tiktokCreator.creator_nickname||tiktokCreator.creator_username||'TikTok'}} · Visibilité privée : {{tiktokCreator.privacy_level_options?.includes('SELF_ONLY')?'autorisée':'non disponible'}}</p>
+</div>
 </section>
 <div class="columns">
 <section class="panel"><div class="section-header"><div><span class="eyebrow">01 / PRÉPARATION</span><h2>Créer un projet</h2></div><span class="symbol">✦</span></div>
@@ -60,6 +66,24 @@
 <div class="details"><h3>Détails de la production</h3><div class="detail"><span>Épisode</span><code>{{episode.id}}</code></div><div class="detail"><span>Statut</span><strong>{{labels[episode.status]||episode.status}}</strong></div><div class="detail"><span>Format</span><strong>1080 × 1920 · MP4</strong></div>
 <div *ngIf="episode.error_message" class="alert error"><strong>Erreur de génération</strong><p>{{episode.error_message}}</p></div>
 <div *ngIf="episode.narration" class="narration"><h4>Narration</h4><p>{{episode.narration}}</p></div>
+<div *ngIf="isReady(episode.status)" class="tiktok-controls">
+<h4>Publication TikTok — test privé</h4>
+<p class="help">Les droits des illustrations doivent être vérifiés avant l'approbation. Ne confirme les droits que si tu disposes réellement des autorisations nécessaires.</p>
+<button type="button" class="secondary" (click)="loadAssets()">Afficher les justificatifs des illustrations</button>
+<div *ngFor="let asset of assets" class="tiktok-asset">
+<span>{{asset.origin}} · {{asset.rights_verified?'Droits vérifiés':'À vérifier'}}</span>
+<div *ngIf="!asset.rights_verified">
+<input [name]="'evidence-'+asset.id" [(ngModel)]="assetEvidence[asset.id]" placeholder="Justificatif réel des droits">
+<button type="button" class="secondary" (click)="verifyAsset(asset)">Vérifier</button>
+</div></div>
+<button *ngIf="episode.status==='READY_FOR_REVIEW'" type="button" class="secondary" (click)="approveEpisode()">Approuver cet épisode</button>
+<div *ngIf="episode.status==='APPROVED' && tiktok?.connected">
+<label for="tiktokCaption">Légende TikTok</label><textarea id="tiktokCaption" name="tiktokCaption" [(ngModel)]="tiktokCaption" rows="3" maxlength="2200" placeholder="Résumé du film… #cinema #film"></textarea>
+<label class="tiktok-consent"><input type="checkbox" name="tiktokConsent" [(ngModel)]="tiktokConsent"> J'autorise explicitement l'envoi de cette vidéo sur mon compte TikTok en visibilité privée.</label>
+<button type="button" class="primary" [disabled]="publishing||!tiktokConsent||!tiktokCaption.trim()||!tiktokAdminKey||!tiktokCreator?.privacy_level_options?.includes('SELF_ONLY')" (click)="publishPrivate()">{{publishing?'Envoi à TikTok…':'Publier en privé sur TikTok'}}</button>
+</div>
+<div *ngIf="tiktokPublishId"><p class="help">Publication {{tiktokPublishId}} · {{tiktokPublishStatus}}</p><button type="button" class="secondary" (click)="checkPublishStatus()">Actualiser le statut TikTok</button></div>
+</div>
 <a *ngIf="isReady(episode.status)" class="primary download" [href]="videoUrl(episode)" [attr.download]="'episode-'+episode.id+'.mp4'">↓ Télécharger le MP4</a><p class="help" *ngIf="isReady(episode.status)">Vérifie le résultat avant publication.</p>
 </div></div></section>
 <footer>Movie Factory Studio · Publication manuelle uniquement</footer>
