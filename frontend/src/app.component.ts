@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
+interface FilmResult { title:string; releaseYear:number|null; synopsis:string; originalTitle:string; tmdbId:number; }
 interface Movie { id:string; title:string; }
 interface Episode { id:string; movie_id:string; episode_number:number; status:string; narration?:string|null; error_message?:string|null; }
 
 @Component({selector:'app-root',standalone:true,imports:[CommonModule,FormsModule],templateUrl:'./app.component.html',styleUrl:'./app.component.css'})
 export class AppComponent implements OnInit,OnDestroy {
   title=''; year:number|null=null; synopsis=''; movieId='';
+  searchResults:FilmResult[]=[]; searching=false;
   movie:Movie|null=null; episodes:Episode[]=[]; selected:Episode|null=null;
   busy=false; message=''; error='';
   private timer:ReturnType<typeof setInterval>|null=null;
@@ -17,6 +19,19 @@ export class AppComponent implements OnInit,OnDestroy {
   constructor(private readonly http:HttpClient){}
   ngOnInit():void { const saved=localStorage.getItem('movie-factory-last-movie'); if(saved){this.movieId=saved;void this.loadMovie();} }
   ngOnDestroy():void {this.stopPolling();}
+  async lookup():Promise<void>{
+    if(!this.title.trim())return;
+    this.searching=true;this.error='';this.searchResults=[];
+    try{
+      this.searchResults=await firstValueFrom(this.http.get<FilmResult[]>('/api/movie-lookup',{params:{title:this.title.trim()}}));
+      if(!this.searchResults.length)this.error='Aucun film avec un synopsis disponible. Essaie un titre plus précis.';
+    }catch(e){this.showError(e);}finally{this.searching=false;}
+  }
+  async chooseFilm(film:FilmResult):Promise<void>{
+    this.title=film.title;this.year=film.releaseYear;this.synopsis=film.synopsis;this.searchResults=[];
+    await this.createMovie();
+    if(this.movie)await this.generate();
+  }
   async createMovie():Promise<void>{
     if(!this.title.trim()||!this.synopsis.trim()){this.error='Le titre et le synopsis sont obligatoires.';return;}
     this.busy=true;this.error='';this.message='';
