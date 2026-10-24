@@ -1,0 +1,38 @@
+<div class="layout">
+<aside class="sidebar"><div class="brand"><span class="logo">▶</span> MOVIE<span class="purple">FACTORY</span><small>STUDIO</small></div><div class="menu">▦ &nbsp; Tableau de bord</div><div class="menu muted">▤ &nbsp; Production vidéo</div><div class="sidefooter"><span class="dot"></span> Environnement local</div></aside>
+<main class="main">
+<header><span class="eyebrow">WORKSPACE / CRÉATION</span><h1>Studio de création <em>vidéo.</em></h1><p>Transforme un synopsis en une vidéo verticale avec narration française et illustrations originales.</p></header>
+<div class="notice"><strong>ⓘ &nbsp; Génération assistée par IA</strong> Chaque lancement utilise des crédits OpenAI. Vérifie les droits des visuels avant toute publication.</div>
+<div *ngIf="error" class="alert error">{{error}}</div><div *ngIf="message" class="alert success">{{message}}</div>
+<div class="columns">
+<section class="panel"><div class="section-header"><div><span class="eyebrow">01 / PRÉPARATION</span><h2>Créer un projet</h2></div><span class="symbol">✦</span></div>
+<form (ngSubmit)="createMovie()">
+<label for="title">Titre du film</label><input id="title" name="title" [(ngModel)]="title" required maxlength="180" placeholder="Ex. Le Mystère du Phare">
+<label for="year">Année de sortie (facultatif)</label><input id="year" name="year" [(ngModel)]="year" type="number" min="1888" max="2100" placeholder="2024">
+<label for="synopsis">Synopsis source</label><textarea id="synopsis" name="synopsis" [(ngModel)]="synopsis" required maxlength="10000" rows="7" placeholder="Décris les événements du film. La narration sera construite à partir de ces informations…"></textarea>
+<p class="help">Plus le synopsis est détaillé, plus la narration sera fidèle.</p>
+<button class="primary" type="submit" [disabled]="busy||!title.trim()||!synopsis.trim()">{{busy?'Enregistrement…':'＋ Créer le film'}}</button>
+</form><div class="separator">OU REPRENDRE UN FILM</div>
+<label for="movieId">Identifiant du film</label><div class="inline"><input id="movieId" name="movieId" [(ngModel)]="movieId" placeholder="UUID du film"><button class="secondary" type="button" (click)="loadMovie()">Charger</button></div>
+</section>
+<section class="panel"><div class="section-header"><div><span class="eyebrow">02 / PRODUCTION</span><h2>Suivi des générations</h2></div><span class="symbol">◷</span></div>
+<ng-container *ngIf="movie;else emptyMovie">
+<div class="movie"><span class="poster">🎬</span><div><span class="eyebrow">PROJET ACTIF</span><h3>{{movie.title}}</h3><small>{{movie.id}}</small></div></div>
+<button class="primary" type="button" (click)="generate()" [disabled]="busy||episodes.length>0&&isRunning(episodes[0].status)">✦ &nbsp; {{busy?'Lancement…':'Générer une nouvelle vidéo'}}</button>
+<p class="help center">Voix française · 6 illustrations · Format 9:16 · API payante</p>
+<div class="list-title"><h3>Historique des épisodes</h3><button class="link" (click)="refreshEpisodes()">↻ Actualiser</button></div>
+<div *ngIf="!episodes.length" class="empty">Aucune génération pour ce film.</div>
+<button *ngFor="let e of episodes" type="button" class="episode" [class.selected]="selected?.id===e.id" (click)="selected=e">
+<span class="number">#{{e.episode_number}}</span><span class="episode-name"><strong>Épisode {{e.episode_number}}</strong><small>{{e.id}}</small></span><span class="status" [class.ready]="isReady(e.status)" [class.failed]="e.status==='FAILED'">{{labels[e.status]||e.status}}</span></button>
+</ng-container>
+<ng-template #emptyMovie><div class="empty large"><span>▣</span><h3>Ton studio est prêt</h3><p>Crée un film ou charge un projet existant pour commencer.</p></div></ng-template>
+</section></div>
+<section *ngIf="selected as episode" class="panel review"><div class="section-header"><div><span class="eyebrow">03 / PRÉVISUALISATION</span><h2>Épisode {{episode.episode_number}} <small>· {{labels[episode.status]||episode.status}}</small></h2></div></div>
+<div class="review-grid"><div class="player"><video *ngIf="isReady(episode.status)" [src]="videoUrl(episode)" controls playsinline preload="metadata"></video><div *ngIf="!isReady(episode.status)" class="waiting">▶<p>{{episode.status==='FAILED'?'Génération interrompue':'Vidéo en cours de préparation…'}}</p></div></div>
+<div class="details"><h3>Détails de la production</h3><div class="detail"><span>Épisode</span><code>{{episode.id}}</code></div><div class="detail"><span>Statut</span><strong>{{labels[episode.status]||episode.status}}</strong></div><div class="detail"><span>Format</span><strong>1080 × 1920 · MP4</strong></div>
+<div *ngIf="episode.error_message" class="alert error"><strong>Erreur de génération</strong><p>{{episode.error_message}}</p></div>
+<div *ngIf="episode.narration" class="narration"><h4>Narration</h4><p>{{episode.narration}}</p></div>
+<a *ngIf="isReady(episode.status)" class="primary download" [href]="videoUrl(episode)" [attr.download]="'episode-'+episode.id+'.mp4'">↓ Télécharger le MP4</a><p class="help" *ngIf="isReady(episode.status)">Vérifie le résultat avant publication.</p>
+</div></div></section>
+<footer>Movie Factory Studio · Publication manuelle uniquement</footer>
+</main></div>
