@@ -4,6 +4,13 @@
 <header><span class="eyebrow">WORKSPACE / CRÉATION</span><h1>Studio de création <em>vidéo.</em></h1><p>Transforme un synopsis en une vidéo verticale avec narration française et illustrations originales.</p></header>
 <div class="notice"><strong>ⓘ &nbsp; Génération assistée par IA</strong> Chaque lancement utilise des crédits OpenAI. Vérifie les droits des visuels avant toute publication.</div>
 <div *ngIf="error" class="alert error">{{error}}</div><div *ngIf="message" class="alert success">{{message}}</div>
+<section class="panel tiktok-connect"><div class="section-header"><div><span class="eyebrow">CONNEXION TIKTOK</span><h2>Compte TikTok</h2></div><span class="symbol">♪</span></div>
+<p *ngIf="tiktok?.connected" class="alert success">Compte TikTok connecté. La publication automatique n'est pas encore activée.</p>
+<p *ngIf="tiktok && !tiktok.configured" class="help">Configure TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REDIRECT_URI et TIKTOK_TOKEN_ENCRYPTION_KEY dans .env.</p>
+<a *ngIf="tiktok?.configured && !tiktok?.connected" class="primary download" [href]="tiktok?.connectUrl">Connecter mon compte TikTok</a>
+<button type="button" class="secondary history-refresh" (click)="refreshTikTok()">↻ Vérifier la connexion</button>
+<p class="help">Pour les tests OAuth, la connexion passe par le tunnel HTTPS Cloudflare. Ne partage pas les clés ni les jetons.</p>
+</section>
 <div class="columns">
 <section class="panel"><div class="section-header"><div><span class="eyebrow">01 / PRÉPARATION</span><h2>Créer un projet</h2></div><span class="symbol">✦</span></div>
 <form (ngSubmit)="createMovie()">
