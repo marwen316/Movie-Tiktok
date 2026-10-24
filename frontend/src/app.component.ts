@@ -29,6 +29,7 @@ export class AppComponent implements OnInit,OnDestroy {
   }
   async chooseFilm(film:FilmResult):Promise<void>{
     this.title=film.title;this.year=film.releaseYear;this.synopsis=film.synopsis;this.searchResults=[];
+    this.movie=null;this.selected=null;this.episodes=[];
     await this.createMovie();
     if(this.movie)await this.generate();
   }
