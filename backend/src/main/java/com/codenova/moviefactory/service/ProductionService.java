@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.net.URI;
@@ -45,7 +46,17 @@ public class ProductionService {
         if(apiKey.isBlank()) throw new IllegalStateException("OPENAI_API_KEY is not configured");
         Map<String,Object> movie=movie(movieId);
         UUID episode=UUID.randomUUID();
-        db.update("INSERT INTO episodes(id,movie_id,status) VALUES(?,?,'QUEUED')",episode,movieId);
+        boolean inserted=false;
+        for(int attempt=0;attempt<5 && !inserted;attempt++) {
+            try {
+                db.update("INSERT INTO episodes(id,movie_id,episode_number,status) "+
+                    "SELECT ?, ?, COALESCE(MAX(episode_number),0)+1, 'QUEUED' FROM episodes WHERE movie_id=?",
+                    episode,movieId,movieId);
+                inserted=true;
+            } catch(DuplicateKeyException e) {
+                if(attempt==4) throw e;
+            }
+        }
         executor.submit(()->produce(episode,movie));
         return episode;
     }
