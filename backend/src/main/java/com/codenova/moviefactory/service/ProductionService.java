@@ -113,9 +113,21 @@ public class ProductionService {
             StringBuilder filter=new StringBuilder();
             for(int i=0;i<6;i++) filter.append("[").append(i).append(":v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1[v").append(i).append("];");
             for(int i=0;i<6;i++) filter.append("[v").append(i).append("]");
-            filter.append("concat=n=6:v=1:a=0[outv]");
+            filter.append("concat=n=6:v=1:a=0[outv];");
+            // Use a UTF-8 text file instead of embedding user-controlled titles in the filter syntax.
+            // This also preserves accents, apostrophes and punctuation.
+            String movieTitle=String.valueOf(movie.get("title")).replaceAll("[\\r\\n\\t]+"," ").trim();
+            Path titleFile=dir.resolve("movie-title.txt");
+            Files.writeString(titleFile,movieTitle,StandardCharsets.UTF_8);
+            int titleFontSize=Math.max(32,Math.min(68,1300/Math.max(1,movieTitle.length())));
+            filter.append("[outv]drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+                .append(":textfile=").append(titleFile)
+                .append(":expansion=none:fontsize=").append(titleFontSize)
+                .append(":fontcolor=white:borderw=3:bordercolor=black@0.7")
+                .append(":box=1:boxcolor=black@0.55:boxborderw=22")
+                .append(":x=(w-text_w)/2:y=180:enable='between(t,0,4)'[titled]");
             Path video=dir.resolve("output.mp4");
-            command.addAll(List.of("-filter_complex",filter.toString(),"-map","[outv]","-map","6:a","-c:v","libx264","-preset","veryfast","-crf","25","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-shortest","-movflags","+faststart",video.toString()));
+            command.addAll(List.of("-filter_complex",filter.toString(),"-map","[titled]","-map","6:a","-c:v","libx264","-preset","veryfast","-crf","25","-pix_fmt","yuv420p","-c:a","aac","-b:a","160k","-shortest","-movflags","+faststart",video.toString()));
             run(command,Duration.ofMinutes(8));
             if(!Files.isRegularFile(video) || Files.size(video)<1000) throw new IOException("Video not generated");
             db.update("UPDATE episodes SET status='READY_FOR_REVIEW',video_path=? WHERE id=?",video.toString(),episode);
