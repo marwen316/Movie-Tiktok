@@ -35,6 +35,13 @@ public class ProductionService {
         db.update("INSERT INTO movies(id,title,release_year,synopsis) VALUES(?,?,?,?)",id,title,year,synopsis);
         return id;
     }
+    public List<Map<String,Object>> movies() {
+        return db.queryForList(
+            "SELECT m.id, m.title, m.release_year, " +
+            "(SELECT COUNT(*) FROM episodes e WHERE e.movie_id=m.id) AS episode_count, " +
+            "(SELECT COUNT(*) FROM episodes e WHERE e.movie_id=m.id AND e.status IN ('READY_FOR_REVIEW','APPROVED')) AS ready_count " +
+            "FROM movies m ORDER BY m.title, m.id");
+    }
     public Map<String,Object> movie(UUID id) {
         try { return db.queryForMap("SELECT * FROM movies WHERE id=?",id); }
         catch (EmptyResultDataAccessException e) { throw new NoSuchElementException("Movie not found: "+id); }
