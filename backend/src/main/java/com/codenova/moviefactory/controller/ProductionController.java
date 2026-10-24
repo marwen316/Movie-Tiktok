@@ -52,7 +52,11 @@ public class ProductionController {
             .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=episode-"+id+".mp4")
             .body(new FileSystemResource(file));
     }
-    @ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class,NoSuchElementException.class})
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<?> notFound(NoSuchElementException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error",String.valueOf(e.getMessage())));
+    }
+    @ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class})
     public ResponseEntity<?> badRequest(RuntimeException e) {
         return ResponseEntity.badRequest().body(Map.of("error",String.valueOf(e.getMessage())));
     }
