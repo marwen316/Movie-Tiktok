@@ -36,6 +36,17 @@ class ProductionControllerTest {
         verify(service).approve(episode);
     }
     @Test
+    void unknownEpisodeReturns404() {
+        UUID episode=UUID.randomUUID();
+        when(service.episode(episode)).thenThrow(new NoSuchElementException("Episode not found: "+episode));
+        try {
+            controller.episode(episode);
+            fail("Expected missing episode");
+        } catch (NoSuchElementException e) {
+            assertEquals(HttpStatus.NOT_FOUND,controller.notFound(e).getStatusCode());
+        }
+    }
+    @Test
     void missingVideoReturns404() {
         UUID episode=UUID.randomUUID();
         when(service.episode(episode)).thenReturn(Map.of("status","QUEUED"));
