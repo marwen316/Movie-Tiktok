@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/moviefactory}
+    username: ${SPRING_DATASOURCE_USERNAME:moviefactory}
+    password: ${SPRING_DATASOURCE_PASSWORD:moviefactory}
+  jpa:
+    hibernate:
+      ddl-auto: none
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
