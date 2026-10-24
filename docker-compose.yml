@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: moviefactory
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -24,6 +25,7 @@ services:
       - "127.0.0.1:9001:9001"
   n8n:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION}
+    restart: unless-stopped
     environment:
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
@@ -41,10 +43,17 @@ services:
         condition: service_healthy
   api:
     build: ./backend
+    restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/moviefactory
       SPRING_DATASOURCE_USERNAME: moviefactory
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_TEXT_MODEL: ${OPENAI_TEXT_MODEL:-gpt-4.1-mini}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-1}
+      MEDIA_DIR: /data/media
+    volumes:
+      - media_data:/data/media
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -54,3 +63,4 @@ volumes:
   postgres_data:
   minio_data:
   n8n_data:
+  media_data:
