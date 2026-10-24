@@ -1,20 +1,17 @@
 # Movie TikTok Factory
 
-MVP for generating French-language short movie recaps with licensed or original AI illustrations.
+Studio Angular 20 de création de vidéos verticales avec narration française, illustrations IA et rendu FFmpeg.
 
-## Architecture
-- Spring Boot 3 / Java 21 API
-- n8n orchestration
-- PostgreSQL for job metadata
-- MinIO for assets
-- FFmpeg rendering worker (planned)
+## Démarrage sous Windows CMD
 
-## Quick start
-1. Copy `.env.example` to `.env` and replace placeholders.
-2. Run `docker compose up --build -d`.
-3. Open n8n at http://localhost:5678 and API at http://localhost:8080/actuator/health.
-4. Import workflows from `n8n/workflows`.
+1. Configurer `.env` avec les identifiants PostgreSQL et la clé API OpenAI.
+2. Exécuter `docker compose up --build -d postgres api frontend` (sans n8n).
+3. Ouvrir http://localhost:4200 dans le navigateur.
+4. Créer un film avec son synopsis ou charger un film existant.
+5. Lancer une génération, suivre son statut, visionner et télécharger le MP4.
 
-This initial scaffold provides the infrastructure, API skeleton and orchestration template. AI generation, asset licensing verification, FFmpeg rendering and TikTok publication are **not yet implemented**.
+L'interface Angular est servie par Nginx, qui relaie `/api/` vers Spring Boot. PostgreSQL conserve les films et épisodes. Les vidéos sont dans le volume Docker `media_data`.
 
-Do not publish copyrighted footage or posters without appropriate permission. Human approval is required before publication.
+**Important :** chaque génération appelle OpenAI et entraîne des frais. La publication TikTok reste manuelle. Vérifier les droits des visuels avant publication.
+
+n8n reste facultatif pour utiliser le studio. Pour le lancer séparément : `docker compose up -d n8n`.
