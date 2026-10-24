@@ -1,0 +1,50 @@
+{
+  "name": "01 - Create movie (manual MVP)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8080/api/movies",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"title\":\"Example movie\",\"releaseYear\":2024,\"sourceSynopsis\":\"Replace with a licensed or independently written factual synopsis.\"}",
+        "options": {}
+      },
+      "id": "create",
+      "name": "Create Movie",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Movie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
