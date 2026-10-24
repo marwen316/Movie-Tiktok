@@ -13,16 +13,6 @@ services:
       test: ["CMD-SHELL", "pg_isready -U moviefactory -d moviefactory"]
       interval: 5s
       retries: 10
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    volumes:
-      - minio_data:/data
-    ports:
-      - "127.0.0.1:9001:9001"
   n8n:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION}
     restart: unless-stopped
@@ -61,6 +51,5 @@ services:
         condition: service_healthy
 volumes:
   postgres_data:
-  minio_data:
   n8n_data:
   media_data:
