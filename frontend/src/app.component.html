@@ -8,6 +8,13 @@
 <section class="panel"><div class="section-header"><div><span class="eyebrow">01 / PRÉPARATION</span><h2>Créer un projet</h2></div><span class="symbol">✦</span></div>
 <form (ngSubmit)="createMovie()">
 <label for="title">Titre du film</label><input id="title" name="title" [(ngModel)]="title" required maxlength="180" placeholder="Ex. Le Mystère du Phare">
+<button type="button" class="primary" [disabled]="searching||busy||!title.trim()" (click)="lookup()">{{searching?'Recherche du film…':'⌕ Rechercher le film automatiquement'}}</button>
+<p class="help">Choisis le bon film parmi les résultats. Le synopsis sera récupéré et la vidéo lancée automatiquement.</p>
+<div *ngIf="searchResults.length" class="lookup-results">
+<button *ngFor="let film of searchResults" type="button" class="episode" (click)="chooseFilm(film)" [disabled]="busy">
+<span class="number">🎬</span><span class="episode-name"><strong>{{film.title}} ({{film.releaseYear||'Année inconnue'}})</strong><small>{{film.synopsis}}</small></span><span class="status">Choisir</span>
+</button></div>
+<div class="separator">OU SAISIR UN SYNOPSIS MANUELLEMENT</div>
 <label for="year">Année de sortie (facultatif)</label><input id="year" name="year" [(ngModel)]="year" type="number" min="1888" max="2100" placeholder="2024">
 <label for="synopsis">Synopsis source</label><textarea id="synopsis" name="synopsis" [(ngModel)]="synopsis" required maxlength="10000" rows="7" placeholder="Décris les événements du film. La narration sera construite à partir de ces informations…"></textarea>
 <p class="help">Plus le synopsis est détaillé, plus la narration sera fidèle.</p>
