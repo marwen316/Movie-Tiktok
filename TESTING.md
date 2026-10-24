@@ -1,6 +1,6 @@
 # MVP smoke test
 
-The pipeline currently produces one recap per generation request using six AI-generated images and a French AI voice. Licensed asset ingestion, synchronized subtitles, recurring scheduling and TikTok posting are not implemented.
+The pipeline currently produces one recap per generation request using six AI-generated images and a French AI voice. Licensed asset ingestion, recurring scheduling and TikTok posting are not implemented. Subtitles are intentionally out of scope: videos use French AI narration only.
 
 ## Start
 ```bash
@@ -37,5 +37,5 @@ Assets default to unverified. Review every image, then POST `{"evidence":"Review
 - API processing currently uses an in-memory executor; jobs are not restart-resilient.
 - Image generation can be expensive. API model availability and image sizes must be confirmed against your account.
 - Media files are stored in a Docker volume rather than MinIO; MinIO is provisioned but not integrated.
-- No subtitles, licensed image upload, multi-episode narrative planning or automated TikTok publishing yet.
+- Subtitles are intentionally disabled (French narration only). Licensed image upload, multi-episode narrative planning and automated TikTok publishing are not implemented yet.
 - The repository has not been built or integration-tested in the target environment.
