@@ -1,5 +1,5 @@
 <div class="layout">
-<aside class="sidebar"><div class="brand"><span class="logo">▶</span> MOVIE<span class="purple">FACTORY</span><small>STUDIO</small></div><div class="menu">▦ &nbsp; Tableau de bord</div><div class="menu muted">▤ &nbsp; Production vidéo</div><div class="sidefooter"><span class="dot"></span> Environnement local</div></aside>
+<aside class="sidebar"><div class="brand"><span class="logo">▶</span> MOVIE<span class="purple">FACTORY</span><small>STUDIO</small></div><div class="menu">▦ &nbsp; Tableau de bord</div><a class="menu muted" href="#history">▤ &nbsp; Historique des films</a><div class="sidefooter"><span class="dot"></span> Environnement local</div></aside>
 <main class="main">
 <header><span class="eyebrow">WORKSPACE / CRÉATION</span><h1>Studio de création <em>vidéo.</em></h1><p>Transforme un synopsis en une vidéo verticale avec narration française et illustrations originales.</p></header>
 <div class="notice"><strong>ⓘ &nbsp; Génération assistée par IA</strong> Chaque lancement utilise des crédits OpenAI. Vérifie les droits des visuels avant toute publication.</div>
@@ -34,6 +34,20 @@
 </ng-container>
 <ng-template #emptyMovie><div class="empty large"><span>▣</span><h3>Ton studio est prêt</h3><p>Crée un film ou charge un projet existant pour commencer.</p></div></ng-template>
 </section></div>
+<section class="panel history-panel" id="history">
+<div class="section-header"><div><span class="eyebrow">03 / BIBLIOTHÈQUE</span><h2>Historique de mes films</h2></div><button type="button" class="secondary history-refresh" (click)="refreshHistory()" [disabled]="historyLoading">{{historyLoading?'Chargement…':'↻ Actualiser'}}</button></div>
+<p class="help">Les films sont enregistrés dans PostgreSQL. Clique sur un film pour retrouver ses épisodes et télécharger les vidéos disponibles.</p>
+<label for="historySearch">Rechercher dans l'historique</label>
+<input id="historySearch" name="historySearch" [(ngModel)]="historyFilter" placeholder="Rechercher un titre de film…">
+<div *ngIf="!historyLoading && !history.length" class="empty">Aucun film enregistré pour le moment.</div>
+<div *ngIf="history.length && !filteredHistory.length" class="empty">Aucun film ne correspond à cette recherche.</div>
+<div class="history-grid">
+<div *ngFor="let film of filteredHistory" class="history-card" [class.active]="movie?.id===film.id">
+<div class="history-card-top"><span class="poster">🎬</span><div class="history-meta"><h3>{{film.title}}</h3><small>{{film.release_year||'Année non précisée'}}</small><p>{{film.episode_count||0}} épisode(s) · {{film.ready_count||0}} vidéo(s) disponible(s)</p></div></div>
+<button type="button" class="secondary history-open" (click)="openHistoryMovie(film.id)">Voir les épisodes et télécharger</button>
+</div>
+</div>
+</section>
 <section *ngIf="selected as episode" class="panel review"><div class="section-header"><div><span class="eyebrow">03 / PRÉVISUALISATION</span><h2>Épisode {{episode.episode_number}} <small>· {{labels[episode.status]||episode.status}}</small></h2></div></div>
 <div class="review-grid"><div class="player"><video *ngIf="isReady(episode.status)" [src]="videoUrl(episode)" controls playsinline preload="metadata"></video><div *ngIf="!isReady(episode.status)" class="waiting">▶<p>{{episode.status==='FAILED'?'Génération interrompue':'Vidéo en cours de préparation…'}}</p></div></div>
 <div class="details"><h3>Détails de la production</h3><div class="detail"><span>Épisode</span><code>{{episode.id}}</code></div><div class="detail"><span>Statut</span><strong>{{labels[episode.status]||episode.status}}</strong></div><div class="detail"><span>Format</span><strong>1080 × 1920 · MP4</strong></div>
