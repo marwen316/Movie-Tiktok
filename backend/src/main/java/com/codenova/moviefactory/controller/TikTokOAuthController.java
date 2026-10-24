@@ -46,7 +46,8 @@ public class TikTokOAuthController {
     @GetMapping("/status")
     public Map<String,Object> status(){
         Integer count=db.queryForObject("SELECT COUNT(*) FROM tiktok_oauth_accounts",Integer.class);
-        return Map.of("connected",count!=null&&count>0,"configured",configured());
+        return Map.of("connected",count!=null&&count>0,"configured",configured(),
+            "connectUrl",configured()?redirectUri.replaceFirst("/api/tiktok/callback$","/api/tiktok/connect"):"");
     }
 
     @GetMapping("/connect")
