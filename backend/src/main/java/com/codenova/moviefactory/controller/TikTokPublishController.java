@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Cipher;
@@ -26,6 +28,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/tiktok")
 public class TikTokPublishController {
+    private static final Logger log=LoggerFactory.getLogger(TikTokPublishController.class);
     private final JdbcTemplate db;
     private final ObjectMapper json;
     private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
@@ -76,7 +79,7 @@ public class TikTokPublishController {
             .header("Content-Type","application/x-www-form-urlencoded").timeout(Duration.ofSeconds(30))
             .POST(HttpRequest.BodyPublishers.ofString(body)).build();
         HttpResponse<String> res=http.send(req,HttpResponse.BodyHandlers.ofString());
-        if(res.statusCode()!=200)throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"Echec du renouvellement TikTok");
+        if(res.statusCode()!=200){log.warn("TikTok token refresh failed HTTP {}",res.statusCode());throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"Echec du renouvellement TikTok HTTP "+res.statusCode());}
         JsonNode data=json.readTree(res.body());
         if(data.path("access_token").asText().isBlank()||data.path("refresh_token").asText().isBlank())
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"Renouvellement TikTok refuse");
@@ -92,11 +95,19 @@ public class TikTokPublishController {
             .timeout(Duration.ofSeconds(40)).POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
         HttpResponse<String> res=http.send(req,HttpResponse.BodyHandlers.ofString());
         JsonNode body=json.readTree(res.body());
-        if(res.statusCode()/100!=2||!"ok".equals(body.path("error").path("code").asText()))
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                "TikTok "+endpoint+": "+body.path("error").path("code").asText("HTTP "+res.statusCode())+
-                " - "+body.path("error").path("message").asText(""));
+        if(res.statusCode()/100!=2||!"ok".equals(body.path("error").path("code").asText())) {
+            String errorCode=body.path("error").path("code").asText("HTTP "+res.statusCode());
+            String errorMessage=body.path("error").path("message").asText("");
+            log.warn("TikTok API failure endpoint={} httpStatus={} code={} message={} logId={}",
+                endpoint,res.statusCode(),errorCode,errorMessage,body.path("error").path("log_id").asText(""));
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"TikTok "+endpoint+": "+errorCode+" - "+errorMessage);
+        }
         return body.path("data");
+    }
+    @ExceptionHandler(ResponseStatusException.class)
+    public org.springframework.http.ResponseEntity<Map<String,Object>> handleTikTokError(ResponseStatusException e){
+        return org.springframework.http.ResponseEntity.status(e.getStatusCode()).body(Map.of(
+            "error",e.getReason()==null?"Erreur TikTok":e.getReason()));
     }
     @PostMapping("/creator-info")
     public JsonNode creatorInfo(@RequestHeader(value="X-TikTok-Admin-Key",required=false) String key) throws Exception{
@@ -157,8 +168,10 @@ public class TikTokPublishController {
                     .header("Content-Range","bytes "+start+"-"+(start+length-1)+"/"+size)
                     .PUT(HttpRequest.BodyPublishers.ofByteArray(bytes)).build();
                 HttpResponse<String> response=http.send(upload,HttpResponse.BodyHandlers.ofString());
-                if(response.statusCode()/100!=2)
+                if(response.statusCode()/100!=2){
+                    log.warn("TikTok upload failed HTTP {} publishId={} chunk={}",response.statusCode(),publishId,i);
                     throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,"TikTok upload HTTP "+response.statusCode()+" (publish_id="+publishId+")");
+                }
             }
         }
         return Map.of("publishId",publishId,"status","PROCESSING","privacy","SELF_ONLY");
