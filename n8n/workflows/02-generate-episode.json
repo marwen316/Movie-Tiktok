@@ -1,0 +1,130 @@
+{
+  "name": "02 - Generate and monitor episode",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "movie",
+              "name": "movieId",
+              "value": "REPLACE_WITH_MOVIE_UUID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set",
+      "name": "Set Movie ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:8080/api/movies/{{$json.movieId}}/generate",
+        "options": {}
+      },
+      "id": "generate",
+      "name": "Generate Episode",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "wait",
+      "name": "Wait 60 seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://api:8080/api/episodes/{{$('Generate Episode').first().json.episodeId}}",
+        "options": {}
+      },
+      "id": "status",
+      "name": "Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Movie ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Movie ID": {
+      "main": [
+        [
+          {
+            "node": "Generate Episode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Episode": {
+      "main": [
+        [
+          {
+            "node": "Wait 60 seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60 seconds": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
