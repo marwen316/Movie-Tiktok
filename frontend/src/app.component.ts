@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
+interface TikTokStatus { connected:boolean; configured:boolean; connectUrl:string; }
 interface FilmResult { title:string; releaseYear:number|null; synopsis:string; originalTitle:string; tmdbId:number; }
 interface Movie { id:string; title:string; release_year?:number|null; episode_count?:number; ready_count?:number; }
 interface Episode { id:string; movie_id:string; episode_number:number; status:string; narration?:string|null; error_message?:string|null; }
@@ -15,14 +16,19 @@ export class AppComponent implements OnInit,OnDestroy {
   movie:Movie|null=null; episodes:Episode[]=[]; selected:Episode|null=null;
   history:Movie[]=[]; historyFilter=''; historyLoading=false;
   busy=false; message=''; error='';
+  tiktok:TikTokStatus|null=null;
   private timer:ReturnType<typeof setInterval>|null=null;
   readonly labels:Record<string,string>={QUEUED:'En attente',GENERATING:'Narration',GENERATING_AUDIO:'Voix française',GENERATING_IMAGES:'Illustrations',RENDERING:'Montage vidéo',READY_FOR_REVIEW:'Prêt à visionner',APPROVED:'Approuvé',FAILED:'Échec'};
   constructor(private readonly http:HttpClient){}
-  ngOnInit():void { void this.refreshHistory(); const saved=localStorage.getItem('movie-factory-last-movie'); if(saved){this.movieId=saved;void this.loadMovie();} }
+  ngOnInit():void { void this.refreshTikTok(); void this.refreshHistory(); const saved=localStorage.getItem('movie-factory-last-movie'); if(saved){this.movieId=saved;void this.loadMovie();} }
   ngOnDestroy():void {this.stopPolling();}
   get filteredHistory():Movie[] {
     const term=this.historyFilter.trim().toLocaleLowerCase();
     return term?this.history.filter(m=>m.title.toLocaleLowerCase().includes(term)):this.history;
+  }
+  async refreshTikTok():Promise<void>{
+    try {this.tiktok=await firstValueFrom(this.http.get<TikTokStatus>('/api/tiktok/status'));}
+    catch(e){this.showError(e);}
   }
   async refreshHistory():Promise<void>{
     this.historyLoading=true;
