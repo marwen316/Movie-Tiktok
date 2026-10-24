@@ -22,6 +22,8 @@ public class ProductionController {
         UUID id=service.create(request.title(),request.releaseYear(),request.sourceSynopsis());
         return ResponseEntity.status(201).body(Map.of("id",id,"status","DRAFT"));
     }
+    @GetMapping("/movies")
+    public Object movies() {return service.movies();}
     @GetMapping("/movies/{id}")
     public Object movie(@PathVariable UUID id) {return service.movie(id);}
     @GetMapping("/movies/{id}/episodes")
