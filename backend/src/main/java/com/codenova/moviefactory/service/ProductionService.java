@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import java.io.*;
 import java.net.URI;
@@ -34,7 +35,8 @@ public class ProductionService {
         return id;
     }
     public Map<String,Object> movie(UUID id) {
-        return db.queryForMap("SELECT * FROM movies WHERE id=?",id);
+        try { return db.queryForMap("SELECT * FROM movies WHERE id=?",id); }
+        catch (EmptyResultDataAccessException e) { throw new NoSuchElementException("Movie not found: "+id); }
     }
     public List<Map<String,Object>> episodes(UUID movieId) {
         return db.queryForList("SELECT * FROM episodes WHERE movie_id=? ORDER BY episode_number",movieId);
@@ -48,7 +50,8 @@ public class ProductionService {
         return episode;
     }
     public Map<String,Object> episode(UUID id) {
-        return db.queryForMap("SELECT * FROM episodes WHERE id=?",id);
+        try { return db.queryForMap("SELECT * FROM episodes WHERE id=?",id); }
+        catch (EmptyResultDataAccessException e) { throw new NoSuchElementException("Episode not found: "+id); }
     }
     private JsonNode post(String endpoint, Object payload) throws Exception {
         HttpRequest request=HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/"+endpoint))
