@@ -5,6 +5,8 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 interface TikTokStatus { connected:boolean; configured:boolean; connectUrl:string; }
+interface TikTokCreator { creator_nickname?:string; creator_username?:string; privacy_level_options?:string[]; }
+interface Asset {id:string;rights_verified:boolean;origin:string;license_evidence?:string;}
 interface FilmResult { title:string; releaseYear:number|null; synopsis:string; originalTitle:string; tmdbId:number; }
 interface Movie { id:string; title:string; release_year?:number|null; episode_count?:number; ready_count?:number; }
 interface Episode { id:string; movie_id:string; episode_number:number; status:string; narration?:string|null; error_message?:string|null; }
@@ -17,6 +19,10 @@ export class AppComponent implements OnInit,OnDestroy {
   history:Movie[]=[]; historyFilter=''; historyLoading=false;
   busy=false; message=''; error='';
   tiktok:TikTokStatus|null=null;
+  tiktokAdminKey=''; tiktokCreator:TikTokCreator|null=null;
+  tiktokCaption=''; tiktokConsent=false; publishing=false;
+  tiktokPublishId=''; tiktokPublishStatus='';
+  assets:Asset[]=[]; assetEvidence:Record<string,string>={};
   private timer:ReturnType<typeof setInterval>|null=null;
   readonly labels:Record<string,string>={QUEUED:'En attente',GENERATING:'Narration',GENERATING_AUDIO:'Voix française',GENERATING_IMAGES:'Illustrations',RENDERING:'Montage vidéo',READY_FOR_REVIEW:'Prêt à visionner',APPROVED:'Approuvé',FAILED:'Échec'};
   constructor(private readonly http:HttpClient){}
@@ -29,6 +35,51 @@ export class AppComponent implements OnInit,OnDestroy {
   async refreshTikTok():Promise<void>{
     try {this.tiktok=await firstValueFrom(this.http.get<TikTokStatus>('/api/tiktok/status'));}
     catch(e){this.showError(e);}
+  }
+  private tiktokHeaders(){return {'X-TikTok-Admin-Key':this.tiktokAdminKey};}
+  async checkCreator():Promise<void>{
+    this.error='';
+    try{this.tiktokCreator=await firstValueFrom(this.http.post<TikTokCreator>('/api/tiktok/creator-info',{}, {headers:this.tiktokHeaders()}));}
+    catch(e){this.showError(e);}
+  }
+  async loadAssets():Promise<void>{
+    if(!this.selected)return;
+    try{this.assets=await firstValueFrom(this.http.get<Asset[]>('/api/episodes/'+this.selected.id+'/assets'));}
+    catch(e){this.showError(e);}
+  }
+  async verifyAsset(asset:Asset):Promise<void>{
+    const evidence=(this.assetEvidence[asset.id]||'').trim();
+    if(!evidence){this.error='Renseigne la justification des droits de cette illustration.';return;}
+    try{
+      await firstValueFrom(this.http.post('/api/assets/'+asset.id+'/verify',{evidence}));
+      await this.loadAssets();this.message='Justificatif enregistré.';
+    }catch(e){this.showError(e);}
+  }
+  async approveEpisode():Promise<void>{
+    if(!this.selected)return;
+    try{
+      await firstValueFrom(this.http.post('/api/episodes/'+this.selected.id+'/approve',{}));
+      await this.refreshEpisodes();this.message='Episode approuvé après vérification des droits.';
+    }catch(e){this.showError(e);}
+  }
+  async publishPrivate():Promise<void>{
+    if(!this.selected||!this.tiktokConsent||!this.tiktokCreator?.privacy_level_options?.includes('SELF_ONLY'))return;
+    if(!window.confirm('Confirmer l’envoi de cette vidéo sur ton compte TikTok en mode privé ?'))return;
+    this.publishing=true;this.error='';this.message='';
+    try{
+      const result=await firstValueFrom(this.http.post<{publishId:string;status:string}>('/api/tiktok/publish-private',
+        {episodeId:this.selected.id,caption:this.tiktokCaption,consent:true},{headers:this.tiktokHeaders()}));
+      this.tiktokPublishId=result.publishId;this.tiktokPublishStatus=result.status;
+      this.message='Vidéo transmise à TikTok. Vérifie maintenant son statut.';
+    }catch(e){this.showError(e);}finally{this.publishing=false;}
+  }
+  async checkPublishStatus():Promise<void>{
+    if(!this.tiktokPublishId)return;
+    try{
+      const result=await firstValueFrom(this.http.post<{status:string;fail_reason?:string}>('/api/tiktok/publication-status',
+        {publishId:this.tiktokPublishId},{headers:this.tiktokHeaders()}));
+      this.tiktokPublishStatus=result.status+(result.fail_reason?' — '+result.fail_reason:'');
+    }catch(e){this.showError(e);}
   }
   async refreshHistory():Promise<void>{
     this.historyLoading=true;
