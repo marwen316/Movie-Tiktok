@@ -81,6 +81,15 @@
 <label for="tiktokCaption">Légende TikTok</label><textarea id="tiktokCaption" name="tiktokCaption" [(ngModel)]="tiktokCaption" rows="3" maxlength="2200" placeholder="Résumé du film… #cinema #film"></textarea>
 <label class="tiktok-consent"><input type="checkbox" name="tiktokConsent" [(ngModel)]="tiktokConsent"> J'autorise explicitement l'envoi de cette vidéo sur mon compte TikTok en visibilité privée.</label>
 <button type="button" class="primary" [disabled]="publishing||!tiktokConsent||!tiktokCaption.trim()||!tiktokAdminKey||!tiktokCreator?.privacy_level_options?.includes('SELF_ONLY')" (click)="publishPrivate()">{{publishing?'Envoi à TikTok…':'Publier en privé sur TikTok'}}</button>
+<label for="scheduledLocal">Date et heure de publication (heure locale)</label>
+<input id="scheduledLocal" name="scheduledLocal" type="datetime-local" [(ngModel)]="scheduledLocal">
+<button type="button" class="secondary" [disabled]="scheduleBusy||!scheduledLocal||!tiktokConsent||!tiktokCaption.trim()||!tiktokAdminKey" (click)="scheduleTikTok()">{{scheduleBusy?'Programmation…':'Programmer une publication privée'}}</button>
+<button type="button" class="secondary" (click)="loadScheduledPosts()">Voir les publications programmées</button>
+<div *ngFor="let post of scheduledPosts" class="tiktok-asset">
+<strong>{{post.status}}</strong><span>{{post.scheduled_at | date:'dd/MM/yyyy HH:mm'}}</span>
+<small>{{post.caption}}</small>
+<button *ngIf="post.status==='QUEUED'" type="button" class="secondary" (click)="cancelScheduledPost(post.id)">Annuler</button>
+</div>
 </div>
 <div *ngIf="tiktokPublishId"><p class="help">Publication {{tiktokPublishId}} · {{tiktokPublishStatus}}</p><button type="button" class="secondary" (click)="checkPublishStatus()">Actualiser le statut TikTok</button></div>
 </div>
