@@ -116,10 +116,17 @@ public class TikTokPublishController {
     }
     public record PublishRequest(UUID episodeId,String caption,boolean consent) {}
 
+    public Map<String,Object> publishApproved(UUID episodeId,String caption) throws Exception {
+        return doPublish(new PublishRequest(episodeId,caption,true));
+    }
+
     @PostMapping("/publish-private")
     public Map<String,Object> publish(@RequestHeader(value="X-TikTok-Admin-Key",required=false) String key,
                                       @RequestBody PublishRequest request) throws Exception{
         authorize(key);
+        return doPublish(request);
+    }
+    private Map<String,Object> doPublish(PublishRequest request) throws Exception{
         if(request==null||request.episodeId()==null||!request.consent())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Confirmation explicite requise");
         Map<String,Object> episode;
@@ -175,6 +182,9 @@ public class TikTokPublishController {
             }
         }
         return Map.of("publishId",publishId,"status","PROCESSING","privacy","SELF_ONLY");
+    }
+    public JsonNode fetchPublicationStatus(String publishId) throws Exception {
+        return post("/v2/post/publish/status/fetch/",token(),Map.of("publish_id",publishId));
     }
     @PostMapping("/publication-status")
     public JsonNode publicationStatus(@RequestHeader(value="X-TikTok-Admin-Key",required=false) String key,
