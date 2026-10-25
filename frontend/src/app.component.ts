@@ -22,6 +22,7 @@ export class AppComponent implements OnInit,OnDestroy {
   tiktokAdminKey=''; tiktokCreator:TikTokCreator|null=null;
   tiktokCaption=''; tiktokConsent=false; publishing=false;
   tiktokPublishId=''; tiktokPublishStatus='';
+  scheduledLocal=''; scheduleBusy=false; scheduledPosts:any[]=[];
   assets:Asset[]=[]; assetEvidence:Record<string,string>={};
   private timer:ReturnType<typeof setInterval>|null=null;
   readonly labels:Record<string,string>={QUEUED:'En attente',GENERATING:'Narration',GENERATING_AUDIO:'Voix française',GENERATING_IMAGES:'Illustrations',RENDERING:'Montage vidéo',READY_FOR_REVIEW:'Prêt à visionner',APPROVED:'Approuvé',FAILED:'Échec'};
@@ -72,6 +73,26 @@ export class AppComponent implements OnInit,OnDestroy {
       this.tiktokPublishId=result.publishId;this.tiktokPublishStatus=result.status;
       this.message='Vidéo transmise à TikTok. Vérifie maintenant son statut.';
     }catch(e){this.showError(e);}finally{this.publishing=false;}
+  }
+  async scheduleTikTok():Promise<void>{
+    if(!this.selected||!this.scheduledLocal||!this.tiktokCaption.trim()||!this.tiktokConsent)return;
+    const date=new Date(this.scheduledLocal);
+    if(!Number.isFinite(date.getTime())){this.error='Date de programmation invalide';return;}
+    this.scheduleBusy=true;this.error='';
+    try{
+      await firstValueFrom(this.http.post('/api/tiktok/schedule',
+        {episodeId:this.selected.id,caption:this.tiktokCaption,scheduledAt:date.toISOString()},
+        {headers:this.tiktokHeaders()}));
+      this.message='Publication privée programmée.';await this.loadScheduledPosts();
+    }catch(e){this.showError(e);}finally{this.scheduleBusy=false;}
+  }
+  async loadScheduledPosts():Promise<void>{
+    try{this.scheduledPosts=await firstValueFrom(this.http.get<any[]>('/api/tiktok/schedule',{headers:this.tiktokHeaders()}));}
+    catch(e){this.showError(e);}
+  }
+  async cancelScheduledPost(id:string):Promise<void>{
+    try{await firstValueFrom(this.http.post('/api/tiktok/schedule/'+id+'/cancel',{}, {headers:this.tiktokHeaders()}));await this.loadScheduledPosts();}
+    catch(e){this.showError(e);}
   }
   async checkPublishStatus():Promise<void>{
     if(!this.tiktokPublishId)return;
